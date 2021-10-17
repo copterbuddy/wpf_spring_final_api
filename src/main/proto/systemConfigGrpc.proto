@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_generic_services = true;
+
+package com.example.systemConfigGrpc;
+
+service GetBankListService {
+    rpc GetBankList(EmptyRequest) returns(BankListResponse);
+}
+
+message EmptyRequest{
+    string text = 1;
+}
+
+message BankListResponse{
+    string text = 1;
+}

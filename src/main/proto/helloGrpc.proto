@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_generic_services = true;
+
+package com.example.helloworld;
+
+service HelloWorldService {
+    rpc hello(HelloRequest) returns(HelloResponse);
+}
+
+message HelloRequest{
+    string text = 1;
+}
+
+message HelloResponse{
+    string text = 1;
+}
