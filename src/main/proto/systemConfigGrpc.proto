@@ -3,16 +3,34 @@ syntax = "proto3";
 option java_multiple_files = true;
 option java_generic_services = true;
 
+
 package com.example.systemConfigGrpc;
+
+import "google/protobuf/timestamp.proto";
 
 service GetBankListService {
     rpc GetBankList(EmptyRequest) returns(BankListResponse);
 }
 
 message EmptyRequest{
-    string text = 1;
+    optional string text = 1;
 }
 
 message BankListResponse{
-    string text = 1;
+    message BankList{
+        string bankCode = 1;
+        string bankName = 2;
+        string bankImage = 3;
+    }
+    message ReturnResult{
+        string result = 1;
+        string resultCode = 2;
+        string resultDescription = 3;
+        string errorRefId = 4;
+        google.protobuf.Timestamp resultTimestamp = 5;
+    }
+    
+    repeated BankList bankList = 1;
+    ReturnResult returnResult = 2;
 }
+

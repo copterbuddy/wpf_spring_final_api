@@ -3,7 +3,13 @@ package com.example.wallet_transfer_service.model;
 import java.util.Base64;
 import java.util.Date;
 
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
+import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
 
@@ -11,19 +17,19 @@ import lombok.Data;
 
 @Entity
 @Data
-@Emb
-@Table(name = "[SMTR_MST_BANK]")
+@Table(name = "SMTR_MST_BANK")
 public class Bank {
 
-    public String bank_code;
-    public String bank_name_th;
-    public String bank_name_en;
-    public String bank_abbr;
-    public int seq_no;
-    public Base64 img_path;
+    @Id
+    public String bankCode;
+    public String bankNameTh;
+    public String bankNameEn;
+    public String bankAbbr;
+    public int seqNo;
+    public String imgPath;
     public int status;
-    public Date created_date;
-    public String created_by;
-    public Date updated_date;
-    public String updated_by;
+    public Date createdDate;
+    public String createdBy;
+    public Date updatedDate;
+    public String updatedBy;
 }
