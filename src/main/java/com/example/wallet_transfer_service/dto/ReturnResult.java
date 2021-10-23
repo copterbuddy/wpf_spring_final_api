@@ -12,9 +12,3 @@ public class ReturnResult {
     private String errorRefId;
     private Date resultTimeStamp;
 }
-
-// string result = 1;
-// string resultCode = 2;
-// string resultDescription = 3;
-// string errorRefId = 4;
-// string resultTimestamp = 5;

@@ -4,11 +4,13 @@ import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.info.ProjectInfoProperties.Build;
 
+import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -47,7 +49,6 @@ public class SystemConfigServiceImpl extends GetBankListServiceGrpc.GetBankListS
         var response = BankListResponse.newBuilder();
 
         try {
-
             // TODO: CallApi
             BankListDto resultList = systemConfigService.GetBankService();
 
@@ -79,7 +80,9 @@ public class SystemConfigServiceImpl extends GetBankListServiceGrpc.GetBankListS
 
         } catch (Exception e) {
             // TODO: handle exception
-            responseObserver.onError(e);
+            responseObserver.onError(
+                    Status.INTERNAL.withDescription("getBankListController : Cannot Connect to Service Because : " + e)
+                            .asRuntimeException());
         }
 
     }

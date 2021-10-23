@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_generic_services = true;
+
+package com.example.CustomerWalletGrpc;
+
+import "google/protobuf/timestamp.proto";
+
+service CustomerWalletService {
+    rpc SearchCustomer (SearchCustomerRequest) returns (SearchCustomerResponse);
+    rpc GetFromWallet (GetFromWalletRequest) returns (GetFromWalletResponse);
+    rpc GetToWallet (GetToWalletRequest) returns (GetToWalletResponse);
+}
+
+message ReturnResult{
+    string result = 1;
+    string resultCode = 2;
+    string resultDescription = 3;
+    string errorRefId = 4;
+    google.protobuf.Timestamp resultTimestamp = 5;
+}
+
+message SearchCustomerRequest{
+    string searchText = 1;
+    string searchType = 2;
+}
+
+message SearchCustomerResponse{
+    message CustomerEntity{
+        string custId = 1;
+        string citizenId = 2;
+        string branch = 3;
+        string title = 4;
+        string name = 5;
+        string lastname = 6;
+        string segmant = 7;
+        bool jointAccountStatus = 8;
+        bool sensitiveAccount = 9;
+        string citizenImage = 10;
+        string signImage = 11;
+    }
+    
+    repeated CustomerEntity customerEntity = 1;
+    ReturnResult returnResult = 2;
+}
+
+message GetFromWalletRequest{
+    string custId = 1;
+}
+
+message GetFromWalletResponse{
+    message WalletList{
+        string walletId = 1;
+        string walletName = 2;
+        double balance = 3;
+        string bankCode = 4;
+    }
+    
+    repeated WalletList walletList = 1;
+    ReturnResult returnResult = 2;
+}
+
+message GetToWalletRequest{
+    string walletId = 1;
+    string bankCode = 2;
+}
+
+message GetToWalletResponse{
+    string walletName = 1;
+    ReturnResult returnResult = 2;
+}
