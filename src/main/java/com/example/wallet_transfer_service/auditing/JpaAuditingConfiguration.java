@@ -15,10 +15,11 @@ public class JpaAuditingConfiguration {
     @Bean
     public AuditorAware<String> auditorProvider() {
         return () -> {
-            var serviceName = (String) RequestContextHolder.currentRequestAttributes().getAttribute("serviceName",
-                    RequestAttributes.SCOPE_REQUEST);
+            // var serviceName = (String)
+            // RequestContextHolder.currentRequestAttributes().getAttribute("serviceName",
+            // RequestAttributes.SCOPE_REQUEST);
 
-            return Optional.ofNullable(serviceName);
+            return Optional.ofNullable("");
         };
     }
 }

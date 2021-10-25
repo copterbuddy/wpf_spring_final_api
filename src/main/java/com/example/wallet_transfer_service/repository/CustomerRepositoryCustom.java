@@ -7,5 +7,4 @@ import com.example.wallet_transfer_service.model.Customer;
 public interface CustomerRepositoryCustom {
 
     public List<Customer> searchCustomers(String searchText, String searchType);
-
 }

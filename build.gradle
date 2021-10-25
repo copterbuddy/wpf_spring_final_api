@@ -40,6 +40,9 @@ dependencies {
 	testCompileOnly 'org.projectlombok:lombok'//get set test
 
 	testAnnotationProcessor 'org.projectlombok:lombok'//get set test
+
+	compileOnly 'com.google.code.gson:gson:2.8.2'
+
 }
 
 protobuf {

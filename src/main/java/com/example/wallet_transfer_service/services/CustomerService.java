@@ -1,8 +1,12 @@
 package com.example.wallet_transfer_service.services;
 
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import javax.transaction.Transactional;
 
 import com.example.wallet_transfer_service.dto.CustomerDto;
 import com.example.wallet_transfer_service.dto.CustomerListDto;
@@ -16,6 +20,7 @@ import com.example.wallet_transfer_service.repository.RunningIdRepository;
 import com.example.wallet_transfer_service.utils.DateTimeUtil;
 import com.example.wallet_transfer_service.utils.EnumUtil;
 import com.example.wallet_transfer_service.utils.ErrorUtil;
+import com.google.gson.Gson;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Component
 @Slf4j
+@Transactional
 public class CustomerService {
 
     @Autowired
@@ -47,12 +53,17 @@ public class CustomerService {
     @Autowired
     RunningIdRepository runningIdRepository;
 
+    @Autowired
+    LogService logService;
+
     private String _baseUrl = "http://gf-dev-bo-website-lb-1570887081.ap-southeast-1.elb.amazonaws.com:550/api/Wallet";
 
-    public CustomerListDto GetCustomerList(String searchText, String searchType) {
+    public CustomerListDto GetCustomerList(String searchText, String searchType, String comName, String userId) {
+        return GetCustomerListNew(searchText, searchType, comName, userId, true);
+    }
 
-        //  List<RunningID> findAll = runningIdRepository.findByRunningType("TRAN_RUNNING_ID");
-        // RunningID reeeee = runningIdRepository.findTopByRunningTypeOrderByLastRunningIdDesc("TRAN_RUNNING_ID");
+    public CustomerListDto GetCustomerListNew(String searchText, String searchType, String comName, String userId,
+            boolean isAdd) {
 
         // Create Response
         CustomerListDto response = new CustomerListDto();
@@ -68,7 +79,7 @@ public class CustomerService {
             getSearchType = enumUtil.GetSearchType(searchType);
 
             // TODO: Get CustList
-            if (!StringUtil.isNullOrEmpty(getSearchType)) {
+            if (!StringUtil.isNullOrEmpty(getSearchType) && !StringUtil.isNullOrEmpty(searchText)) {
                 List<Customer> custList = customerRepository.searchCustomers(searchText, getSearchType);
                 // "1100800745551"
 
@@ -80,6 +91,17 @@ public class CustomerService {
 
                     response.setCustomerEntity(custListDto);
                     response.setReturnResult(errorUtil.SuccessResult());
+
+                    Gson gson = new Gson();
+                    var actFullDetail = gson.toJson(response);
+
+                    if (response.getCustomerEntity().size() > 0 && isAdd != false) {
+
+                        logService.AddActivityLog(1, "SearchCustomer", actFullDetail, userId, comName, null,
+                                response.getReturnResult().getResultCode(),
+                                response.getReturnResult().getResultDescription(), "PAGE001", "TRANSFER_PAGE", null,
+                                null, null, null, null, Date.from(Instant.now()), userId);
+                    }
 
                 }
             }
@@ -104,7 +126,7 @@ public class CustomerService {
             response.setWalletList(new ArrayList<>());
 
             // TODO: Get WalletList
-            var responseWalletList = restTemplate.getForObject(_baseUrl + "/GetWallets?userid=" + custId,
+            var responseWalletList = restTemplate.getForObject(_baseUrl + "/GetWallets?userid=" + custId.trim(),
                     WalletListResponse.class);
 
             if (responseWalletList != null) {

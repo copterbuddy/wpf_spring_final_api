@@ -4,6 +4,8 @@ import java.util.Date;
 
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
@@ -16,10 +18,11 @@ import lombok.Data;
 @Entity
 @Data
 @Table(name = "SMTR_LOG_ACTIVITY")
-@EntityListeners(AuditingEntityListener.class)
+// @EntityListeners(AuditingEntityListener.class)
 public class LogActivity {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int actId;
     private int actType;
     private Date actDate;
@@ -38,9 +41,7 @@ public class LogActivity {
     private Integer actStatus;
     private String pageCode;
     private String pageName;
-    @CreatedDate
-    private String createdDate;
-    @CreatedBy
+    private Date createdDate;
     private String createdBy;
 
 }

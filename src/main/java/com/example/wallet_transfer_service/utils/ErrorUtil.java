@@ -13,8 +13,8 @@ public class ErrorUtil {
 
     public ReturnResult SuccessResult() {
         ReturnResult result = new ReturnResult();
-        result.setResultCode("0000");
-        result.setResult("0000 Success");
+        result.setResultCode("200");
+        result.setResult("200 Success");
         result.setResultDescription("");
         result.setErrorRefId("");
         // result.setResultTimeStamp(dateTimeUtil.GetDateTimeNow());

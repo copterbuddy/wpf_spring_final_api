@@ -18,16 +18,17 @@ import lombok.extern.slf4j.Slf4j;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class GrpcTest {
 
-    @Test
-    @Order(1)
-    void Hello() {
-        var channel = ManagedChannelBuilder.forTarget("localhost:9090").usePlaintext().build();
-        var service = HelloWorldServiceGrpc.newBlockingStub(channel);
+    // @Test
+    // @Order(1)
+    // void Hello() {
+    // var channel =
+    // ManagedChannelBuilder.forTarget("localhost:9090").usePlaintext().build();
+    // var service = HelloWorldServiceGrpc.newBlockingStub(channel);
 
-        var req = HelloRequest.newBuilder().setText("Cop").build();
-        var res = service.hello(req);
+    // var req = HelloRequest.newBuilder().setText("Cop").build();
+    // var res = service.hello(req);
 
-        log.info("kunanonLog-grpc-Client hello={}", res.getText());
-        Assertions.assertEquals("hello,Cop", res.getText());
-    }
+    // log.info("kunanonLog-grpc-Client hello={}", res.getText());
+    // Assertions.assertEquals("hello,Cop", res.getText());
+    // }
 }

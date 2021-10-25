@@ -15,8 +15,8 @@ public interface RunningIdRepository extends JpaRepository<RunningID, String> {
 
     // public List<RunningID> findAll();
 
-    public List<RunningID> findByRunningType(String type);
+    // public List<RunningID> findByRunningType(String type);
 
-    // public RunningID findTopByRunningTypeOrderByLastRunningIdDesc(String id);
+    public RunningID findTopByRunningTypeOrderByLastRunningIdDesc(String id);
 
 }

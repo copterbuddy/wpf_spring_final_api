@@ -12,14 +12,10 @@ service LogGrpc {
 message LogRequest{
     int32 actType = 1;
     string actDetail = 2;
-    string actFullDetail = 3;
-    string userId = 4;
-    string comname = 5;
-    string memo = 6;
-    string errCode = 7;
-    string errDesc = 8;
-    string pageCode = 9;
-    string pageName = 10;
+    string userId = 3;
+    string comname = 4;
+    string pageCode = 5;
+    string pageName = 6;
 
 }
 

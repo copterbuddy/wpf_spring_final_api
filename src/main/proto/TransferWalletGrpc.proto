@@ -21,9 +21,13 @@ message ReturnResult{
 }
 
 message PreTransferRequest{
-    string fromWallet = 1;
-    string toWallet = 2;
-    double amount = 3;
+    string fromWalletId = 1;
+    string toWalletId = 2;
+    string bankCode = 3;
+    double amount = 4;
+    string memo = 5;
+    string comName = 6;
+    string userId = 7;
 }
 
 message PreTransferResponse{
@@ -33,6 +37,9 @@ message PreTransferResponse{
 
 message TransferRequest{
     string transactionToken = 1;
+    string comName = 2;
+    string userId = 3;
+    string citizenId = 4;
 }
 
 message TransferResponse{
@@ -50,7 +57,7 @@ message TransactionEntity{
     double amount = 6;
     double fee3Amount = 7;
     string bankCode = 8;
-    string timeStamp = 9;
+    google.protobuf.Timestamp timeStamp = 9;
     string memo = 10;
     string transactionToken = 11;
 }

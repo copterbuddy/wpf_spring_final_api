@@ -1,8 +1,16 @@
 package com.example.wallet_transfer_service.controllersGrpc;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.util.Date;
+
 import com.example.TransferWalletGrpc.*;
+import com.example.wallet_transfer_service.dto.TransferDtoResponse;
 import com.example.wallet_transfer_service.services.TransferService;
 import com.example.wallet_transfer_service.utils.DateTimeUtil;
+import com.google.protobuf.Timestamp;
 
 import org.lognet.springboot.grpc.GRpcService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,60 +32,61 @@ public class TransferWalletServiceImpl extends TransferWalletServiceGrpc.Transfe
 
     @Override
     public void preTansferWallet(PreTransferRequest request, StreamObserver<PreTransferResponse> responseObserver) {
-        var response = PreTransferRequest.newBuilder();
+        var response = PreTransferResponse.newBuilder();
 
         try {
             // TODO: CallApi
-            transferService.PreTransfer("fromWallet", "toWallet", 0);
+            TransferDtoResponse preTransfer = transferService.PreTransfer(request.getFromWalletId(),
+                    request.getToWalletId(), request.getBankCode(), request.getAmount(), request.getMemo(),
+                    request.getComName(), request.getUserId());
 
             // TODO: Map To Response
-            // if (custList != null && custList.getCustomerEntity() != null &&
-            // custList.getReturnResult() != null
-            // && custList.getCustomerEntity().size() > 0) {
-            // for (CustomerDto item : custList.getCustomerEntity()) {
-            // var cust =
-            // CustomerEntity.newBuilder().setCustId(item.getCustId().replaceAll("\\s+",
-            // ""))
-            // .setCitizenId(item.getCifId().replaceAll("\\s+",
-            // "")).setBranch(item.getBranch())
-            // .setTitle(item.getTitleTh().replaceAll("\\s+", ""))
-            // .setName(item.getFirstnameTh().replaceAll("\\s+", ""))
-            // .setLastname(item.getLastnameTh().replaceAll("\\s+",
-            // "")).setSegmant(item.getSegment())
-            // .setJointAccountStatus(item.getJointAccountStatus())
-            // .setSensitiveAccount(item.getSensitiveCustomer()).setCitizenImage(item.getCifImage())
-            // .setSignImage(item.getSignImage());
-            // response.addCustomerEntity(cust);
-            // }
+            if (preTransfer != null && preTransfer.getConfirmInfo() != null && preTransfer.getReturnResult() != null) {
 
-            // // TODO: ReturnResult
-            // var errorEntity = ReturnResult.newBuilder();
-            // if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResultCode()))
-            // errorEntity.setResultCode(custList.getReturnResult().getResultCode());
+                Date date = preTransfer.getConfirmInfo().getTimeStamp();
+                Instant instant = date.toInstant();
+                Timestamp timestamp = Timestamp.newBuilder().setSeconds(instant.getEpochSecond())
+                        .setNanos(instant.getNano()).build();
 
-            // if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResult()))
-            // errorEntity.setResult(custList.getReturnResult().getResult());
+                var preResponse = TransactionEntity.newBuilder()
+                        .setFromWalletId(preTransfer.getConfirmInfo().getFromWalletId())
+                        .setToWalletId(preTransfer.getConfirmInfo().getToWalletId())
+                        .setToWalletName(preTransfer.getConfirmInfo().getToWalletName())
+                        .setAmount(preTransfer.getConfirmInfo().getAmount())
+                        .setFee3Amount(preTransfer.getConfirmInfo().getFeeCost())
+                        .setBankCode(preTransfer.getConfirmInfo().getToBankCode()).setTimeStamp(timestamp)
+                        .setTransactionToken(preTransfer.getConfirmInfo().getTransactionToken());
+                response.setTransactionEntity(preResponse);
 
-            // if
-            // (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResultDescription()))
-            // errorEntity.setResultDescription(custList.getReturnResult().getResultDescription());
+                // TODO: ReturnResult
+                var errorEntity = ReturnResult.newBuilder();
+                if (!StringUtil.isNullOrEmpty(preTransfer.getReturnResult().getResultCode()))
+                    errorEntity.setResultCode(preTransfer.getReturnResult().getResultCode());
 
-            // if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getErrorRefId()))
-            // errorEntity.setErrorRefId(custList.getReturnResult().getErrorRefId());
+                if (!StringUtil.isNullOrEmpty(preTransfer.getReturnResult().getResult()))
+                    errorEntity.setResult(preTransfer.getReturnResult().getResult());
 
-            // errorEntity.setResultTimestamp(dateTimeUtil.GetTimeStamp());
+                if (!StringUtil.isNullOrEmpty(preTransfer.getReturnResult().getResultDescription()))
+                    errorEntity.setResultDescription(preTransfer.getReturnResult().getResultDescription());
 
-            // response.setReturnResult(errorEntity);
+                if (!StringUtil.isNullOrEmpty(preTransfer.getReturnResult().getErrorRefId()))
+                    errorEntity.setErrorRefId(preTransfer.getReturnResult().getErrorRefId());
 
-            // } else {
-            // // TODO: Handle Error
-            // }
+                errorEntity.setResultTimestamp(dateTimeUtil.GetTimeStamp());
 
-            // // TODO: Return
-            responseObserver.onNext(null);
+                response.setReturnResult(errorEntity);
+
+            } else {
+                // TODO: Handle Error
+            }
+
+            // TODO: Return
+            responseObserver.onNext(response.build());
             responseObserver.onCompleted();
 
-        } catch (Exception e) {
+        } catch (
+
+        Exception e) {
             // TODO: handle exception
             responseObserver.onError(
                     Status.INTERNAL.withDescription("getBankListController : Cannot Connect to Service Because : " + e)
@@ -91,56 +100,58 @@ public class TransferWalletServiceImpl extends TransferWalletServiceGrpc.Transfe
 
         try {
             // TODO: CallApi
-            transferService.Transfer("TransactionToken");
-            
+            TransferDtoResponse transfer = transferService.Transfer(request.getTransactionToken(), request.getComName(),
+                    request.getUserId(), request.getCitizenId());
+
             // TODO: Map To Response
-            // if (custList != null && custList.getCustomerEntity() != null &&
-            // custList.getReturnResult() != null
-            // && custList.getCustomerEntity().size() > 0) {
-            // for (CustomerDto item : custList.getCustomerEntity()) {
-            // var cust =
-            // CustomerEntity.newBuilder().setCustId(item.getCustId().replaceAll("\\s+",
-            // ""))
-            // .setCitizenId(item.getCifId().replaceAll("\\s+",
-            // "")).setBranch(item.getBranch())
-            // .setTitle(item.getTitleTh().replaceAll("\\s+", ""))
-            // .setName(item.getFirstnameTh().replaceAll("\\s+", ""))
-            // .setLastname(item.getLastnameTh().replaceAll("\\s+",
-            // "")).setSegmant(item.getSegment())
-            // .setJointAccountStatus(item.getJointAccountStatus())
-            // .setSensitiveAccount(item.getSensitiveCustomer()).setCitizenImage(item.getCifImage())
-            // .setSignImage(item.getSignImage());
-            // response.addCustomerEntity(cust);
-            // }
+            if (transfer != null && transfer.getConfirmInfo() != null && transfer.getReturnResult() != null) {
 
-            // // TODO: ReturnResult
-            // var errorEntity = ReturnResult.newBuilder();
-            // if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResultCode()))
-            // errorEntity.setResultCode(custList.getReturnResult().getResultCode());
+                Date date = transfer.getConfirmInfo().getTimeStamp();
+                Instant instant = date.toInstant();
+                Timestamp timestamp = Timestamp.newBuilder().setSeconds(instant.getEpochSecond())
+                        .setNanos(instant.getNano()).build();
 
-            // if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResult()))
-            // errorEntity.setResult(custList.getReturnResult().getResult());
+                var transferResponse = TransactionEntity.newBuilder()
+                        .setTransCode(transfer.getConfirmInfo().getTransCode())
+                        .setFromWalletName(transfer.getConfirmInfo().getFromWalletName())
+                        .setFromWalletId(transfer.getConfirmInfo().getFromWalletId())
+                        .setToWalletName(transfer.getConfirmInfo().getToWalletName())
+                        .setToWalletId(transfer.getConfirmInfo().getToWalletId())
+                        .setAmount(transfer.getConfirmInfo().getAmount())
+                        .setFee3Amount(transfer.getConfirmInfo().getFeeCost())
+                        .setBankCode(transfer.getConfirmInfo().getToBankCode()).setTimeStamp(timestamp);
 
-            // if
-            // (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResultDescription()))
-            // errorEntity.setResultDescription(custList.getReturnResult().getResultDescription());
+                response.setTransactionEntity(transferResponse);
 
-            // if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getErrorRefId()))
-            // errorEntity.setErrorRefId(custList.getReturnResult().getErrorRefId());
+                // TODO: ReturnResult
+                var errorEntity = ReturnResult.newBuilder();
+                if (!StringUtil.isNullOrEmpty(transfer.getReturnResult().getResultCode()))
+                    errorEntity.setResultCode(transfer.getReturnResult().getResultCode());
 
-            // errorEntity.setResultTimestamp(dateTimeUtil.GetTimeStamp());
+                if (!StringUtil.isNullOrEmpty(transfer.getReturnResult().getResult()))
+                    errorEntity.setResult(transfer.getReturnResult().getResult());
 
-            // response.setReturnResult(errorEntity);
+                if (!StringUtil.isNullOrEmpty(transfer.getReturnResult().getResultDescription()))
+                    errorEntity.setResultDescription(transfer.getReturnResult().getResultDescription());
 
-            // } else {
-            // // TODO: Handle Error
-            // }
+                if (!StringUtil.isNullOrEmpty(transfer.getReturnResult().getErrorRefId()))
+                    errorEntity.setErrorRefId(transfer.getReturnResult().getErrorRefId());
 
-            // // TODO: Return
-            responseObserver.onNext(null);
+                errorEntity.setResultTimestamp(dateTimeUtil.GetTimeStamp());
+
+                response.setReturnResult(errorEntity);
+
+            } else {
+                // TODO: Handle Error
+            }
+
+            // TODO: Return
+            responseObserver.onNext(response.build());
             responseObserver.onCompleted();
 
-        } catch (Exception e) {
+        } catch (
+
+        Exception e) {
             // TODO: handle exception
             responseObserver.onError(
                     Status.INTERNAL.withDescription("getBankListController : Cannot Connect to Service Because : " + e)

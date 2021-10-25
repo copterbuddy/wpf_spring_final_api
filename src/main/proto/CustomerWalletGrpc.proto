@@ -24,6 +24,8 @@ message ReturnResult{
 message SearchCustomerRequest{
     string searchText = 1;
     string searchType = 2;
+    string comName = 3;
+    string userId = 4;
 }
 
 message SearchCustomerResponse{
@@ -63,7 +65,6 @@ message GetFromWalletResponse{
 
 message GetToWalletRequest{
     string walletId = 1;
-    string bankCode = 2;
 }
 
 message GetToWalletResponse{

@@ -1,7 +1,5 @@
 package com.example.wallet_transfer_service.dto;
 
-import java.math.BigDecimal;
-
 import lombok.Data;
 
 @Data

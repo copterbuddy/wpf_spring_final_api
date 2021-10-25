@@ -5,6 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import io.grpc.stub.StreamObserver;
 
+import java.time.Instant;
+import java.util.Date;
+
 import com.example.LogGrpc.*;
 import com.example.wallet_transfer_service.services.LogService;
 
@@ -20,9 +23,13 @@ public class LogServiceImpl extends LogGrpcGrpc.LogGrpcImplBase {
 
         try {
             // TODO: CallApi
-            logService.AddActivityLog(request.getActType(), request.getActDetail(), request.getActFullDetail(),
-                    request.getUserId(), request.getComname(), request.getMemo(), request.getErrCode(),
-                    request.getErrDesc(), request.getPageCode(), request.getPageName());
+            // logService.AddActivityLog(request.getActType(), request.getActDetail(), "",
+            // request.getUserId(),
+            // request.getComname(), "", "", "", request.getPageCode(),
+            // request.getPageName());
+            logService.AddActivityLog(request.getActType(), request.getActDetail(), "", request.getUserId(),
+                    request.getComname(), null, null, null, request.getPageCode(), request.getPageName(), null, null,
+                    null, null, null, Date.from(Instant.now()), request.getUserId());
 
             // TODO: Return
             responseObserver.onNext(response);

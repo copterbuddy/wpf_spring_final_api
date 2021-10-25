@@ -19,7 +19,10 @@ public class ConfirmInfo {
     private String toBankCode;
     private String toWalletCurrency;
     private String toWalletType;
-    private BigDecimal amount;
-    private BigDecimal feeCost;
+    private double amount;
+    private double feeCost;
+    private String fee3Code;
+    private double fee3Amount;
     private Date timeStamp;
+    private String transactionToken;
 }

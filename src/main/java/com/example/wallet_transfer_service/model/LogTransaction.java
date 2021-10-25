@@ -2,13 +2,13 @@ package com.example.wallet_transfer_service.model;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Date;
 
 import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-
-import com.google.type.Date;
-
 
 import lombok.Data;
 
@@ -17,6 +17,7 @@ import lombok.Data;
 @Table(name = "SMTR_LOG_TRANSACTION")
 public class LogTransaction {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private BigInteger tranId;
     private Date tranDate;
     private String tranCode;
@@ -25,15 +26,17 @@ public class LogTransaction {
     private String cifId;
     private String mobileNo;
     private String fromBankCode;
-    private String fromAccType;
+    private int fromAccType;
     private String fromAccNo;
+    private String fromAccName;
     private String fromAccNickName;
     private String toBankCode;
-    private String toAccType;
+    private int toAccType;
     private String toAccNo;
+    private String toAccName;
     private String toAccNickName;
-    private BigDecimal fee1;
-    private BigDecimal amount;
+    private double fee1;
+    private double amount;
     private String currencyCode;
     private int tranStatus;
     private String memo;

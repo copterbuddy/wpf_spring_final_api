@@ -14,6 +14,7 @@ import com.example.wallet_transfer_service.dto.CustomerDto;
 import com.example.wallet_transfer_service.dto.CustomerListDto;
 import com.example.wallet_transfer_service.dto.WalletDto;
 import com.example.wallet_transfer_service.services.CustomerService;
+import com.example.wallet_transfer_service.services.LogService;
 import com.example.wallet_transfer_service.utils.DateTimeUtil;
 
 import org.lognet.springboot.grpc.GRpcService;
@@ -34,13 +35,17 @@ public class CustomerWalletServiceImpl extends CustomerWalletServiceGrpc.Custome
     @Autowired
     CustomerService customerService;
 
+    @Autowired
+    LogService logService;
+
     @Override
     public void searchCustomer(SearchCustomerRequest request, StreamObserver<SearchCustomerResponse> responseObserver) {
         var response = SearchCustomerResponse.newBuilder();
 
         try {
             // TODO: CallApi
-            CustomerListDto custList = customerService.GetCustomerList(request.getSearchText(),request.getSearchType());
+            CustomerListDto custList = customerService.GetCustomerList(request.getSearchText(), request.getSearchType(),
+                    request.getComName(), request.getUserId());
 
             // TODO: Map To Response
             if (custList != null && custList.getCustomerEntity() != null && custList.getReturnResult() != null

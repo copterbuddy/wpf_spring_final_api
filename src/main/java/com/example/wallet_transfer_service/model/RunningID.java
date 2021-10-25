@@ -14,15 +14,15 @@ import lombok.Data;
 @Data
 @Table(name = "SMTR_RUNNING_ID")
 public class RunningID {
-    // @Id
+    @Id
     private String runningType;
     private String prefix;
     private String suffix;
     private String dayRunning;
     private String monthRunning;
     private String yearRunning;
-    @Id
-    private BigInteger lastRunningId;
+    // @Id
+    private Integer lastRunningId;
     private String createdBy;
     private Date createdDate;
     private String updatedBy;
