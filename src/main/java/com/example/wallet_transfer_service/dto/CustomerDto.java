@@ -16,6 +16,7 @@ public class CustomerDto {
     private Boolean sensitiveCustomer;
     private String cifImage;
     private String signImage;
-    public String mobileNo;
+    private String mobileNo;
+    private String address;
 
 }

@@ -148,6 +148,10 @@ public class LogService {
         return tranId;
     }
 
+    public LogTransaction getLogByTranId(int tranId) {
+        return logTransactionRepository.findByTranId(BigInteger.valueOf(tranId));
+    }
+
     public int CheckActStatus(String errCode) {
         int actStatus = 0;
         switch (errCode) {

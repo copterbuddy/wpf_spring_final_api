@@ -8,5 +8,6 @@ public class BankDto {
     public String bankCode;
     public String bankNameTh;
     public String imgPath;
+    public String bankAbbr;
 
 }

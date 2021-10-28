@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.info.ProjectInfoProperties.Build;
 
 import io.grpc.Status;
 import io.grpc.StatusException;
+import io.grpc.netty.shaded.io.netty.util.internal.StringUtil;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ import com.example.wallet_transfer_service.dto.BankListDto;
 import com.example.wallet_transfer_service.model.Bank;
 import com.example.wallet_transfer_service.services.SystemConfigService;
 import com.example.wallet_transfer_service.utils.DateTimeUtil;
+import com.example.wallet_transfer_service.utils.ErrorUtil;
 import com.google.protobuf.Timestamp;
 
 @GRpcService
@@ -44,6 +46,9 @@ public class SystemConfigServiceImpl extends GetBankListServiceGrpc.GetBankListS
     @Autowired
     DateTimeUtil dateTimeUtil;
 
+    @Autowired
+    ErrorUtil errorUtil;
+
     @Override
     public void getBankList(EmptyRequest request, StreamObserver<BankListResponse> responseObserver) {
         var response = BankListResponse.newBuilder();
@@ -53,25 +58,38 @@ public class SystemConfigServiceImpl extends GetBankListServiceGrpc.GetBankListS
             BankListDto resultList = systemConfigService.GetBankService();
 
             // TODO: Map To BankList
-            if (resultList != null && resultList.getBankList() != null && resultList.getReturnResult() != null
-                    && resultList.getBankList().size() > 0) {
-                for (BankDto item : resultList.getBankList()) {
-                    var bank = BankList.newBuilder().setBankCode(item.getBankCode()).setBankName(item.getBankNameTh())
-                            .setBankImage(item.getImgPath());
-                    response.addBankList(bank);
+            if (resultList != null) {
+                if (resultList.getBankList() != null && resultList.getBankList().size() > 0) {
+                    for (BankDto item : resultList.getBankList()) {
+                        var bank = BankList.newBuilder().setBankCode(item.getBankCode())
+                                .setBankName(item.getBankNameTh()).setBankImage(item.getImgPath());
+                        response.addBankList(bank);
+                    }
                 }
 
-                var errorEntity = ReturnResult.newBuilder();
-                errorEntity.setResultCode(resultList.getReturnResult().getResultCode());
-                errorEntity.setResult(resultList.getReturnResult().getResult());
-                errorEntity.setResultDescription(resultList.getReturnResult().getResultDescription());
-                errorEntity.setErrorRefId(resultList.getReturnResult().getErrorRefId());
-                errorEntity.setResultTimestamp(dateTimeUtil.GetTimeStamp());
+                if (resultList.getReturnResult() != null) {
+                    var errorEntity = ReturnResult.newBuilder();
+                    if (!StringUtil.isNullOrEmpty(resultList.getReturnResult().getResultCode()))
+                        errorEntity.setResultCode(resultList.getReturnResult().getResultCode());
 
-                response.setReturnResult(errorEntity);
+                    if (!StringUtil.isNullOrEmpty(resultList.getReturnResult().getResult()))
+                        errorEntity.setResult(resultList.getReturnResult().getResult());
+
+                    if (!StringUtil.isNullOrEmpty(resultList.getReturnResult().getResultDescription()))
+                        errorEntity.setResultDescription(resultList.getReturnResult().getResultDescription());
+
+                    if (!StringUtil.isNullOrEmpty(resultList.getReturnResult().getErrorRefId()))
+                        errorEntity.setErrorRefId(resultList.getReturnResult().getErrorRefId());
+
+                    response.setReturnResult(errorEntity);
+                }
 
             } else {
                 // TODO: Handle Error
+                var err = ReturnResult.newBuilder().setResultCode("500").setResult("lost connect")
+                        .setResultDescription("ไม่สามารถเชื่อมต่อได้ กรุณาติดต่ผู้ให้บริการ");
+
+                response.setReturnResult(err);
             }
 
             // TODO: Return

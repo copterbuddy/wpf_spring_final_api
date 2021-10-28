@@ -10,6 +10,7 @@ import javax.transaction.Transactional;
 
 import com.example.wallet_transfer_service.dto.CustomerDto;
 import com.example.wallet_transfer_service.dto.CustomerListDto;
+import com.example.wallet_transfer_service.dto.ReturnResult;
 import com.example.wallet_transfer_service.dto.WalletDto;
 import com.example.wallet_transfer_service.dto.WalletListResponse;
 import com.example.wallet_transfer_service.dto.WalletResponse;
@@ -67,42 +68,57 @@ public class CustomerService {
 
         // Create Response
         CustomerListDto response = new CustomerListDto();
+        boolean isProcess = true;
 
         try {
             // Check Param
             if (StringUtil.isNullOrEmpty(searchText) || StringUtil.isNullOrEmpty(searchType)) {
-                // TODO: Handle Error
+                // Handle Error
+                isProcess = false;
+                response.setReturnResult(errorUtil.Error400());
+            }
+
+            if (StringUtil.isNullOrEmpty(comName) || StringUtil.isNullOrEmpty(userId)) {
+                // Handle Error
+                isProcess = false;
+                response.setReturnResult(errorUtil.Error401());
             }
 
             // Get SearchType
             String getSearchType = "";
-            getSearchType = enumUtil.GetSearchType(searchType);
+            if (isProcess) {
+                getSearchType = enumUtil.GetSearchType(searchType);
+                if (StringUtil.isNullOrEmpty(getSearchType)) {
+                    isProcess = false;
+                    response.setReturnResult(errorUtil.Error400());
+                }
+            }
 
             // TODO: Get CustList
-            if (!StringUtil.isNullOrEmpty(getSearchType) && !StringUtil.isNullOrEmpty(searchText)) {
+            if (isProcess) {
                 List<Customer> custList = customerRepository.searchCustomers(searchText, getSearchType);
-                // "1100800745551"
 
                 // TODO: Pass
-                if (custList != null && custList.size() > 0) {
-                    ModelMapper mapper = new ModelMapper();
-                    List<CustomerDto> custListDto = custList.stream().map(o -> mapper.map(o, CustomerDto.class))
-                            .collect(Collectors.toList());
+                if (custList != null) {
+                    if (custList.size() > 0) {
+                        ModelMapper mapper = new ModelMapper();
+                        List<CustomerDto> custListDto = custList.stream().map(o -> mapper.map(o, CustomerDto.class))
+                                .collect(Collectors.toList());
 
-                    response.setCustomerEntity(custListDto);
-                    response.setReturnResult(errorUtil.SuccessResult());
-
-                    Gson gson = new Gson();
-                    var actFullDetail = gson.toJson(response);
-
-                    if (response.getCustomerEntity().size() > 0 && isAdd != false) {
-
-                        logService.AddActivityLog(1, "SearchCustomer", actFullDetail, userId, comName, null,
-                                response.getReturnResult().getResultCode(),
-                                response.getReturnResult().getResultDescription(), "PAGE001", "TRANSFER_PAGE", null,
-                                null, null, null, null, Date.from(Instant.now()), userId);
+                        response.setCustomerEntity(custListDto);
                     }
+                }
 
+                response.setReturnResult(errorUtil.SuccessResult());
+
+                if (isAdd != false) {
+                    Gson gson = new Gson();
+
+                    var actFullDetail = gson.toJson(response);
+                    logService.AddActivityLog(1, "SearchCustomer", actFullDetail, userId, comName, null,
+                            response.getReturnResult().getResultCode(),
+                            response.getReturnResult().getResultDescription(), "PAGE001", "TRANSFER_PAGE", null, null,
+                            null, null, null, Date.from(Instant.now()), userId);
                 }
             }
 
@@ -120,47 +136,54 @@ public class CustomerService {
 
         // TODO: Create Response
         WalletListResponse response = new WalletListResponse();
+        boolean isProcess = true;
 
         try {
-
-            response.setWalletList(new ArrayList<>());
-
-            // TODO: Get WalletList
-            var responseWalletList = restTemplate.getForObject(_baseUrl + "/GetWallets?userid=" + custId.trim(),
-                    WalletListResponse.class);
-
-            if (responseWalletList != null) {
-
-                if (responseWalletList.getWalletList() != null && responseWalletList.getReturnResult() != null
-                        && responseWalletList.getReturnResult().getResultCode().equals("200")
-                        && responseWalletList.getWalletList().size() > 0) {
-
-                    for (WalletDto item : responseWalletList.getWalletList()) {
-                        if (item.getWalletId() != null) {
-                            WalletDto walletDto = new WalletDto();
-                            walletDto = item;
-                            var responseWalletInfo = restTemplate.getForObject(
-                                    _baseUrl + "/GetBalance?walletid=" + item.getWalletId(), WalletDto.class);
-                            if (responseWalletInfo != null) {
-                                if (responseWalletInfo.getReturnResult().getResultCode().equals("200")
-                                        && responseWalletInfo.getBalance() != null) {
-                                    walletDto.setBalance(responseWalletInfo.getBalance());
-                                    response.getWalletList().add(walletDto);
-                                }
-                            }
-
-                        }
-                    }
-
-                    response.setReturnResult(responseWalletList.getReturnResult());
-
+            // TODO: Check Param
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(custId)) {
+                    isProcess = false;
+                    response.setReturnResult(errorUtil.Error400());
                 }
 
+            if (isProcess) {
+
+                response.setWalletList(new ArrayList<>());
+
+                // TODO: Get WalletList
+                var responseWalletList = restTemplate.getForObject(_baseUrl + "/GetWallets?userid=" + custId.trim(),
+                        WalletListResponse.class);
+
+                if (responseWalletList != null) {
+                    if (responseWalletList.getWalletList() != null
+                            && responseWalletList.getReturnResult().getResultCode().equals("200")
+                            && responseWalletList.getWalletList().size() > 0) {
+
+                        for (WalletDto item : responseWalletList.getWalletList()) {
+                            if (item.getWalletId() != null) {
+                                WalletDto walletDto = new WalletDto();
+                                walletDto = item;
+                                var responseWalletInfo = restTemplate.getForObject(
+                                        _baseUrl + "/GetBalance?walletid=" + item.getWalletId(), WalletDto.class);
+                                if (responseWalletInfo != null) {
+                                    if (responseWalletInfo.getReturnResult().getResultCode().equals("200")
+                                            && responseWalletInfo.getBalance() != null) {
+                                        walletDto.setBalance(responseWalletInfo.getBalance());
+                                        response.getWalletList().add(walletDto);
+                                    }
+                                }
+
+                            }
+                        }
+
+                    }
+                    if (responseWalletList.getReturnResult() != null)
+                        response.setReturnResult(responseWalletList.getReturnResult());
+
+                } else {
+                    response.setReturnResult(errorUtil.Error500());
+                }
             }
-
-            // TODO: Pass
-
-            // TODO: Failed
 
         } catch (Exception e) {
             // TODO: handle exception
@@ -172,21 +195,30 @@ public class CustomerService {
 
     public WalletResponse GetToWallet(String toWalletId) {
         WalletResponse response = new WalletResponse();
+        boolean isProcess = true;
 
         try {
+            // TODO: Check Param
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(toWalletId)) {
+                    isProcess = false;
+                    response.setReturnResult(errorUtil.Error400());
+                }
 
             // TODO: Get ToWallet
             var responseToWallet = restTemplate.getForObject(_baseUrl + "/GetWalletInfo?walletid=" + toWalletId,
                     WalletDto.class);
 
-            if (!StringUtil.isNullOrEmpty(responseToWallet.getWalletName())) {
-                response.setWalletName(responseToWallet.getWalletName());
-                response.setReturnResult(responseToWallet.getReturnResult());
+            if (responseToWallet != null) {
+                if (!StringUtil.isNullOrEmpty(responseToWallet.getWalletName())) {
+                    response.setWalletName(responseToWallet.getWalletName());
+                }
+                if (responseToWallet.getReturnResult() != null) {
+                    response.setReturnResult(responseToWallet.getReturnResult());
+                }
+            } else {
+                response.setReturnResult(errorUtil.Error500());
             }
-
-            // TODO: Pass
-
-            // TODO: Failed
 
         } catch (
 

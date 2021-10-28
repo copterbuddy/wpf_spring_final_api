@@ -41,19 +41,24 @@ public class SystemConfigService {
         List<Bank> bankList = bankRepository.findAll();
 
         // TODO: Pass
-        if (bankList != null && bankList.size() > 0) {
-            ModelMapper mapper = new ModelMapper();
-            List<BankDto> bankListDto = bankList.stream().map(o -> mapper.map(o, BankDto.class))
-                    .collect(Collectors.toList());
+        if (bankList != null) {
+            if (bankList.size() > 0) {
+                ModelMapper mapper = new ModelMapper();
+                List<BankDto> bankListDto = bankList.stream().map(o -> mapper.map(o, BankDto.class))
+                        .collect(Collectors.toList());
+                response.setBankList(bankListDto);
 
-            response.setBankList(bankListDto);
+                response.setReturnResult(errorUtil.SuccessResult());
+            } else {
+                response.setReturnResult(errorUtil.Error500());
+            }
 
-            response.setReturnResult(errorUtil.SuccessResult());
-
+        } else {
+            response.setReturnResult(errorUtil.Error500());
         }
 
         // TODO: Failed
-        log.info("kunanonLog.Bsl bankList.size = {}", bankList.size());
+        // log.info("kunanonLog.Bsl bankList.size = {}", bankList.size());
 
         return response;
     }

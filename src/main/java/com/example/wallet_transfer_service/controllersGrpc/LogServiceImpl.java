@@ -23,10 +23,6 @@ public class LogServiceImpl extends LogGrpcGrpc.LogGrpcImplBase {
 
         try {
             // TODO: CallApi
-            // logService.AddActivityLog(request.getActType(), request.getActDetail(), "",
-            // request.getUserId(),
-            // request.getComname(), "", "", "", request.getPageCode(),
-            // request.getPageName());
             logService.AddActivityLog(request.getActType(), request.getActDetail(), "", request.getUserId(),
                     request.getComname(), null, null, null, request.getPageCode(), request.getPageName(), null, null,
                     null, null, null, Date.from(Instant.now()), request.getUserId());

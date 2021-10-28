@@ -13,6 +13,7 @@ import com.example.CustomerWalletGrpc.SearchCustomerResponse.CustomerEntity;
 import com.example.wallet_transfer_service.dto.CustomerDto;
 import com.example.wallet_transfer_service.dto.CustomerListDto;
 import com.example.wallet_transfer_service.dto.WalletDto;
+import com.example.wallet_transfer_service.dto.WalletListResponse;
 import com.example.wallet_transfer_service.services.CustomerService;
 import com.example.wallet_transfer_service.services.LogService;
 import com.example.wallet_transfer_service.utils.DateTimeUtil;
@@ -43,45 +44,91 @@ public class CustomerWalletServiceImpl extends CustomerWalletServiceGrpc.Custome
         var response = SearchCustomerResponse.newBuilder();
 
         try {
-            // TODO: CallApi
-            CustomerListDto custList = customerService.GetCustomerList(request.getSearchText(), request.getSearchType(),
-                    request.getComName(), request.getUserId());
+            boolean isProcess = true;
 
-            // TODO: Map To Response
-            if (custList != null && custList.getCustomerEntity() != null && custList.getReturnResult() != null
-                    && custList.getCustomerEntity().size() > 0) {
-                for (CustomerDto item : custList.getCustomerEntity()) {
-                    var cust = CustomerEntity.newBuilder().setCustId(item.getCustId().replaceAll("\\s+", ""))
-                            .setCitizenId(item.getCifId().replaceAll("\\s+", "")).setBranch(item.getBranch())
-                            .setTitle(item.getTitleTh().replaceAll("\\s+", ""))
-                            .setName(item.getFirstnameTh().replaceAll("\\s+", ""))
-                            .setLastname(item.getLastnameTh().replaceAll("\\s+", "")).setSegmant(item.getSegment())
-                            .setJointAccountStatus(item.getJointAccountStatus())
-                            .setSensitiveAccount(item.getSensitiveCustomer()).setCitizenImage(item.getCifImage())
-                            .setSignImage(item.getSignImage());
-                    response.addCustomerEntity(cust);
+            // TODO: Validate Parameter
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(request.getSearchText())) {
+                    isProcess = false;
+                    var err = ReturnResult.newBuilder().setResultCode("400").setResult("invalid parameter")
+                            .setResultDescription("กรุณากรอกข้อมูลให้ถูกต้อง");
+
+                    response.setReturnResult(err);
                 }
 
-                // TODO: ReturnResult
-                var errorEntity = ReturnResult.newBuilder();
-                if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResultCode()))
-                    errorEntity.setResultCode(custList.getReturnResult().getResultCode());
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(request.getSearchType())) {
+                    isProcess = false;
+                    var err = ReturnResult.newBuilder().setResultCode("400").setResult("invalid parameter")
+                            .setResultDescription("กรุณากรอกข้อมูลให้ถูกต้อง");
 
-                if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResult()))
-                    errorEntity.setResult(custList.getReturnResult().getResult());
+                    response.setReturnResult(err);
+                }
 
-                if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResultDescription()))
-                    errorEntity.setResultDescription(custList.getReturnResult().getResultDescription());
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(request.getComName())) {
+                    isProcess = false;
+                    var err = ReturnResult.newBuilder().setResultCode("401").setResult("unauthorize")
+                            .setResultDescription("การยืนยันตัวตนผิดพลาด");
 
-                if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getErrorRefId()))
-                    errorEntity.setErrorRefId(custList.getReturnResult().getErrorRefId());
+                    response.setReturnResult(err);
+                }
 
-                errorEntity.setResultTimestamp(dateTimeUtil.GetTimeStamp());
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(request.getUserId())) {
+                    isProcess = false;
+                    var err = ReturnResult.newBuilder().setResultCode("401").setResult("unauthorize")
+                            .setResultDescription("การยืนยันตัวตนผิดพลาด");
 
-                response.setReturnResult(errorEntity);
+                    response.setReturnResult(err);
+                }
 
-            } else {
-                // TODO: Handle Error
+            // TODO: CallApi
+
+            if (isProcess) {
+                CustomerListDto custList = customerService.GetCustomerList(request.getSearchText(),
+                        request.getSearchType(), request.getComName(), request.getUserId());
+
+                // TODO: Map To Response
+                if (custList != null) {
+                    if (custList.getCustomerEntity() != null && custList.getCustomerEntity().size() > 0) {
+                        for (CustomerDto item : custList.getCustomerEntity()) {
+                            var cust = CustomerEntity.newBuilder().setCustId(item.getCustId().replaceAll("\\s+", ""))
+                                    .setCitizenId(item.getCifId().replaceAll("\\s+", "")).setBranch(item.getBranch())
+                                    .setTitle(item.getTitleTh().replaceAll("\\s+", ""))
+                                    .setName(item.getFirstnameTh().replaceAll("\\s+", ""))
+                                    .setLastname(item.getLastnameTh().replaceAll("\\s+", ""))
+                                    .setSegmant(item.getSegment()).setJointAccountStatus(item.getJointAccountStatus())
+                                    .setSensitiveAccount(item.getSensitiveCustomer())
+                                    .setCitizenImage(item.getCifImage()).setSignImage(item.getSignImage())
+                                    .setMobileNo((item.getMobileNo())).setAddress(item.getAddress());
+
+                            response.addCustomerEntity(cust);
+                        }
+                    }
+
+                    if (custList.getReturnResult() != null) {
+                        // TODO: ReturnResult
+                        var errorEntity = ReturnResult.newBuilder();
+                        if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResultCode()))
+                            errorEntity.setResultCode(custList.getReturnResult().getResultCode());
+
+                        if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResult()))
+                            errorEntity.setResult(custList.getReturnResult().getResult());
+
+                        if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getResultDescription()))
+                            errorEntity.setResultDescription(custList.getReturnResult().getResultDescription());
+
+                        if (!StringUtil.isNullOrEmpty(custList.getReturnResult().getErrorRefId()))
+                            errorEntity.setErrorRefId(custList.getReturnResult().getErrorRefId());
+
+                        errorEntity.setResultTimestamp(dateTimeUtil.GetTimeStamp());
+
+                        response.setReturnResult(errorEntity);
+                    }
+
+                }
+
             }
 
             // TODO: Return
@@ -90,9 +137,9 @@ public class CustomerWalletServiceImpl extends CustomerWalletServiceGrpc.Custome
 
         } catch (Exception e) {
             // TODO: handle exception
-            responseObserver.onError(
-                    Status.INTERNAL.withDescription("getBankListController : Cannot Connect to Service Because : " + e)
-                            .asRuntimeException());
+            responseObserver.onError(Status.INTERNAL
+                    .withDescription("searchCustomerController : Cannot Connect to Service Because : " + e)
+                    .asRuntimeException());
         }
     }
 
@@ -101,39 +148,59 @@ public class CustomerWalletServiceImpl extends CustomerWalletServiceGrpc.Custome
         var response = GetFromWalletResponse.newBuilder();
 
         try {
-            // TODO: CallApi
-            var walletList = customerService.GetFromWallet("52adb621-1c5c-4f69-b4eb-4cd103f8f92b");
+            boolean isProcess = true;
 
-            // TODO: Map To Response
-            if (walletList != null && walletList.getWalletList() != null && walletList.getReturnResult() != null
-                    && walletList.getWalletList().size() > 0) {
-                for (WalletDto item : walletList.getWalletList()) {
-                    var wallet = WalletList.newBuilder().setWalletId(item.getWalletId())
-                            .setWalletName(item.getWalletName()).setBalance(item.getBalance().doubleValue())
-                            .setBankCode(item.getBankCode());
-                    response.addWalletList(wallet);
+            // TODO: Validate Parameter
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(request.getCustId())) {
+                    isProcess = false;
+                    var err = ReturnResult.newBuilder().setResultCode("401").setResult("unauthorize")
+                            .setResultDescription("การยืนยันตัวตนผิดพลาด");
+
+                    response.setReturnResult(err);
                 }
 
-                // TODO: ReturnResult
-                var errorEntity = ReturnResult.newBuilder();
-                if (!StringUtil.isNullOrEmpty(walletList.getReturnResult().getResultCode()))
-                    errorEntity.setResultCode(walletList.getReturnResult().getResultCode());
+            // TODO: CallApi
+            if (isProcess) {
+                WalletListResponse walletList = customerService.GetFromWallet(request.getCustId());
 
-                if (!StringUtil.isNullOrEmpty(walletList.getReturnResult().getResult()))
-                    errorEntity.setResult(walletList.getReturnResult().getResult());
+                // TODO: Map To Response
+                if (walletList != null) {
+                    if (walletList.getWalletList() != null && walletList.getWalletList().size() > 0) {
+                        for (WalletDto item : walletList.getWalletList()) {
+                            var wallet = WalletList.newBuilder().setWalletId(item.getWalletId())
+                                    .setWalletName(item.getWalletName()).setBalance(item.getBalance().doubleValue())
+                                    .setBankCode(item.getBankCode());
+                            response.addWalletList(wallet);
+                        }
+                    }
 
-                if (!StringUtil.isNullOrEmpty(walletList.getReturnResult().getResultDescription()))
-                    errorEntity.setResultDescription(walletList.getReturnResult().getResultDescription());
+                    if (walletList.getReturnResult() != null) {
+                        // TODO: ReturnResult
+                        var errorEntity = ReturnResult.newBuilder();
+                        if (!StringUtil.isNullOrEmpty(walletList.getReturnResult().getResultCode()))
+                            errorEntity.setResultCode(walletList.getReturnResult().getResultCode());
 
-                if (!StringUtil.isNullOrEmpty(walletList.getReturnResult().getErrorRefId()))
-                    errorEntity.setErrorRefId(walletList.getReturnResult().getErrorRefId());
+                        if (!StringUtil.isNullOrEmpty(walletList.getReturnResult().getResult()))
+                            errorEntity.setResult(walletList.getReturnResult().getResult());
 
-                errorEntity.setResultTimestamp(dateTimeUtil.GetTimeStamp());
+                        if (!StringUtil.isNullOrEmpty(walletList.getReturnResult().getResultDescription()))
+                            errorEntity.setResultDescription(walletList.getReturnResult().getResultDescription());
 
-                response.setReturnResult(errorEntity);
+                        if (!StringUtil.isNullOrEmpty(walletList.getReturnResult().getErrorRefId()))
+                            errorEntity.setErrorRefId(walletList.getReturnResult().getErrorRefId());
 
-            } else {
-                // TODO: Handle Error
+                        errorEntity.setResultTimestamp(dateTimeUtil.GetTimeStamp());
+
+                        response.setReturnResult(errorEntity);
+                    }
+
+                } else {
+                    var err = ReturnResult.newBuilder().setResultCode("500").setResult("lost connect")
+                            .setResultDescription("ไม่สามารถเชื่อมต่อได้ กรุณาติดต่ผู้ให้บริการ");
+
+                    response.setReturnResult(err);
+                }
             }
 
             // TODO: Return
@@ -179,6 +246,10 @@ public class CustomerWalletServiceImpl extends CustomerWalletServiceGrpc.Custome
 
             } else {
                 // TODO: Handle Error
+                var err = ReturnResult.newBuilder().setResultCode("500").setResult("lost connect")
+                        .setResultDescription("ไม่สามารถเชื่อมต่อได้ กรุณาติดต่ผู้ให้บริการ");
+
+                response.setReturnResult(err);
             }
 
             // TODO: Return

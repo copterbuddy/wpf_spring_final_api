@@ -41,6 +41,8 @@ message SearchCustomerResponse{
         bool sensitiveAccount = 9;
         string citizenImage = 10;
         string signImage = 11;
+        string mobileNo = 12;
+        string address = 13;
     }
     
     repeated CustomerEntity customerEntity = 1;

@@ -25,4 +25,5 @@ public class ConfirmInfo {
     private double fee3Amount;
     private Date timeStamp;
     private String transactionToken;
+    private String memo;
 }

@@ -25,7 +25,7 @@ message PreTransferRequest{
     string toWalletId = 2;
     string bankCode = 3;
     double amount = 4;
-    string memo = 5;
+    optional string memo = 5;
     string comName = 6;
     string userId = 7;
 }
