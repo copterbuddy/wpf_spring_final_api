@@ -17,6 +17,7 @@ import com.example.wallet_transfer_service.dto.PreTransferRequest;
 import com.example.wallet_transfer_service.dto.TransferDtoResponse;
 import com.example.wallet_transfer_service.dto.WalletDto;
 import com.example.wallet_transfer_service.dto.WalletListResponse;
+import com.example.wallet_transfer_service.dto.WalletResponse;
 import com.example.wallet_transfer_service.model.Customer;
 import com.example.wallet_transfer_service.model.LogTransaction;
 import com.example.wallet_transfer_service.model.RunningID;
@@ -95,16 +96,27 @@ public class TransferService {
                 }
 
             if (isProcess)
-                if (StringUtil.isNullOrEmpty(memo)) {
-                    isProcess = false;
-                    response.setReturnResult(errorUtil.Error400());
-                }
-
-            if (isProcess)
                 if (StringUtil.isNullOrEmpty(comName)) {
                     isProcess = false;
                     response.setReturnResult(errorUtil.Error400());
                 }
+
+            int balaceCorrect = 0;
+            if (isProcess) {
+                WalletListResponse chkBalanceEntity = customerService.GetBalanceByWalletId(fromWalletId);
+                if (chkBalanceEntity != null) {
+                    if (chkBalanceEntity.getReturnResult().getResultCode().equals("200")) {
+                        WalletDto balanceEnt = chkBalanceEntity.getWalletList().stream().findFirst().orElse(null);
+                        if (balanceEnt.getBalance().intValue() < balaceCorrect) {
+                            isProcess = false;
+                            response.setReturnResult(errorUtil.Error411());
+                        }
+                    }
+                } else {
+                    isProcess = false;
+                    response.setReturnResult(errorUtil.Error400());
+                }
+            }
 
             if (isProcess) {
                 RunningID runIdEntity = new RunningID();
@@ -190,23 +202,43 @@ public class TransferService {
         var response = new TransferDtoResponse();
         String corebankTransType = "transfer_gf";
         String channel = "Wallet";
+        boolean isProcess = true;
 
         try {
             // TODO: CheckParam
-            if (StringUtil.isNullOrEmpty(transactionToken)) {
-
-            }
-
-            Object preTransferRequestObject = redisTemplate.opsForValue().get(transactionToken);
-            if (preTransferRequestObject == null) {
-                // TODO: Error
-
-            }
-            String preTransferRequestString = preTransferRequestObject.toString();
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(transactionToken)) {
+                    isProcess = false;
+                    response.setReturnResult(errorUtil.Error400());
+                }
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(comName)) {
+                    isProcess = false;
+                    response.setReturnResult(errorUtil.Error401());
+                }
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(userId)) {
+                    isProcess = false;
+                    response.setReturnResult(errorUtil.Error401());
+                }
+            if (isProcess)
+                if (StringUtil.isNullOrEmpty(citizenId)) {
+                    isProcess = false;
+                    response.setReturnResult(errorUtil.Error400());
+                }
 
             Gson gson = new Gson();
             var preTransferRequest = new TransferDtoResponse();
-            preTransferRequest = gson.fromJson(preTransferRequestString, TransferDtoResponse.class);
+            if (isProcess) {
+                Object preTransferRequestObject = redisTemplate.opsForValue().get(transactionToken);
+                if (preTransferRequestObject == null) {
+                    isProcess = false;
+                    response.setReturnResult(errorUtil.Error403());
+
+                }
+                String preTransferRequestString = preTransferRequestObject.toString();
+                preTransferRequest = gson.fromJson(preTransferRequestString, TransferDtoResponse.class);
+            }
 
             var transferRequest = new PreTransferRequest();
             transferRequest.setTransCode(preTransferRequest.getConfirmInfo().getTransCode());

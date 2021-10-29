@@ -45,6 +45,22 @@ public class ErrorUtil {
         return result;
     }
 
+    public ReturnResult Error403() {
+        ReturnResult result = new ReturnResult();
+        result.setResultCode("403");
+        result.setResult("invalid flow");
+        result.setResultDescription("การทำรายการผิดพลาด");
+        return result;
+    }
+
+    public ReturnResult Error411() {
+        ReturnResult result = new ReturnResult();
+        result.setResultCode("411");
+        result.setResult("invalid amount");
+        result.setResultDescription("ยอดเงินไม่เพียงพอต่อการทำรายการ");
+        return result;
+    }
+
     public ReturnResult Error500() {
         ReturnResult result = new ReturnResult();
         result.setResultCode("500");

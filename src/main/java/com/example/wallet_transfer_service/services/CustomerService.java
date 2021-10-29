@@ -193,6 +193,26 @@ public class CustomerService {
         return response;
     }
 
+    public WalletListResponse GetBalanceByWalletId(String walletId) {
+        WalletListResponse response = new WalletListResponse();
+        response.setWalletList(new ArrayList<>());
+        var responseWalletInfo = restTemplate.getForObject(_baseUrl + "/GetBalance?walletid=" + walletId,
+                WalletDto.class);
+        if (responseWalletInfo != null) {
+            if (responseWalletInfo.getReturnResult().getResultCode().equals("200")
+                    && responseWalletInfo.getBalance() != null) {
+                responseWalletInfo.setBalance(responseWalletInfo.getBalance());
+                response.getWalletList().add(responseWalletInfo);
+                response.setReturnResult(responseWalletInfo.getReturnResult());
+            } else {
+                response.setReturnResult(errorUtil.Error403());
+            }
+        } else {
+            response.setReturnResult(errorUtil.Error403());
+        }
+        return response;
+    }
+
     public WalletResponse GetToWallet(String toWalletId) {
         WalletResponse response = new WalletResponse();
         boolean isProcess = true;

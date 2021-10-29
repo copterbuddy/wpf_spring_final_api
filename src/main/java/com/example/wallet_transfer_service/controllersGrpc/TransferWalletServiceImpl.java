@@ -62,15 +62,7 @@ public class TransferWalletServiceImpl extends TransferWalletServiceGrpc.Transfe
                 }
 
             if (isProcess)
-                if (request.getAmount() > 0) {
-                    isProcess = false;
-                    var err = ReturnResult.newBuilder().setResultCode("400").setResult("invalid parameter")
-                            .setResultDescription("กรุณากรอกข้อมูลให้ถูกต้อง");
-                    response.setReturnResult(err);
-                }
-
-            if (isProcess)
-                if (StringUtil.isNullOrEmpty(request.getMemo())) {
+                if (request.getAmount() <= 0) {
                     isProcess = false;
                     var err = ReturnResult.newBuilder().setResultCode("400").setResult("invalid parameter")
                             .setResultDescription("กรุณากรอกข้อมูลให้ถูกต้อง");
