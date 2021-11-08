@@ -75,13 +75,13 @@ public class CustomerRepositoryCustomImpl implements CustomerRepositoryCustom {
                 predicates.add(cb.equal(customer.get(searchType), searchText));
             } else {
                 if (isOneText) {
-                    var name = cb.equal(customer.get("firstnameTh"), searchText);
-                    var lastname = cb.equal(customer.get("lastnameTh"), searchText);
+                    var name = cb.like(customer.get("firstnameTh"), "%" + searchText + "%");
+                    var lastname = cb.like(customer.get("lastnameTh"), "%" + searchText + "%");
                     predicates.add(cb.or(name, lastname));
                 } else {
                     if (searchList.size() == 2) {
-                        var name = cb.equal(customer.get("firstnameTh"), searchList.get(0));
-                        var lastname = cb.equal(customer.get("lastnameTh"), searchList.get(1));
+                        var name = cb.like(customer.get("firstnameTh"), "%" + searchList.get(0) + "%");
+                        var lastname = cb.like(customer.get("lastnameTh"), "%" + searchList.get(1) + "%");
                         predicates.add(cb.and(name, lastname));
                     }
                 }

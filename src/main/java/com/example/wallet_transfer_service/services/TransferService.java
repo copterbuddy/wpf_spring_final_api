@@ -68,6 +68,8 @@ public class TransferService {
         String channel = "Wallet";
         boolean isProcess = true;
         Gson gson = new Gson();
+        String bankName = "";
+        String tranCode = "";
 
         try {
             // TODO: CheckParam
@@ -87,6 +89,7 @@ public class TransferService {
                 if (StringUtil.isNullOrEmpty(bankCode)) {
                     isProcess = false;
                     response.setReturnResult(errorUtil.Error400());
+
                 }
 
             if (isProcess)
@@ -100,6 +103,14 @@ public class TransferService {
                     isProcess = false;
                     response.setReturnResult(errorUtil.Error400());
                 }
+
+            BankListDto getBankService = systemConfigService.GetBankService();
+            for (BankDto item : getBankService.getBankList()) {
+                if (item.getBankCode().equals(bankCode)) {
+                    bankName = item.getBankAbbr();
+                    break;
+                }
+            }
 
             int balaceCorrect = 0;
             if (isProcess) {
@@ -141,47 +152,71 @@ public class TransferService {
 
                 RunningID newRunId = runIdEntity;
                 newRunId.setLastRunningId(runIdEntity.getLastRunningId() + 1);
-                runningIdRepository.save(newRunId);
+                RunningID tmpRunId = runningIdRepository.save(newRunId);
+
+                tranCode = tmpRunId.getPrefix() + Integer.parseInt(tmpRunId.getYearRunning())
+                        + Integer.parseInt(tmpRunId.getMonthRunning()) + Integer.parseInt(tmpRunId.getDayRunning())
+                        + tmpRunId.getLastRunningId();
 
                 // TODO: Get PreTransfer
                 var responsePreTransfer = restTemplate.postForEntity(_baseUrl + "/PreTransfer", preTransferRequest,
                         TransferDtoResponse.class);
 
+                // if (responsePreTransfer != null) {
+
+                // }
+
                 if (responsePreTransfer != null && responsePreTransfer.getStatusCode().equals(HttpStatus.OK)) {
-                    var responseFulllDetail = gson.toJson(responsePreTransfer);
-                    logService.AddActivityLog(4, "PreTransfer", responseFulllDetail, userId, comName, memo,
-                            responsePreTransfer.getBody().getReturnResult().getResultCode(),
-                            responsePreTransfer.getBody().getReturnResult().getResultDescription(), "PAGE002",
-                            "PRETRANSFER_PAGE", null, null, null, null, null, Date.from(Instant.now()), userId);
-
-                    // Gen TransactionToken
-                    String transactionToken = md5hashing(
-                            userId + responsePreTransfer.getBody().getReturnResult().getResultTimeStamp());
-
-                    if (!StringUtil.isNullOrEmpty(response.getTransUuid())) {
-                        response.setTransUuid(responsePreTransfer.getBody().getTransUuid());
-                    }
-
                     if (responsePreTransfer.getBody().getConfirmInfo() != null) {
-                        response.setConfirmInfo(responsePreTransfer.getBody().getConfirmInfo());
-                        response.getConfirmInfo().setTransactionToken(transactionToken);
-                        response.getConfirmInfo().setToBankCode(bankCode);
-                        response.getConfirmInfo().setMemo(memo);
-                        response.getConfirmInfo().setFee3Amount(preTransferRequest.getFee3Amount());// fee
-                        response.getConfirmInfo().setFee3Code(preTransferRequest.getFee3Code());// fee
 
-                        if (responsePreTransfer.getBody().getReturnResult() != null)
-                            response.setReturnResult(responsePreTransfer.getBody().getReturnResult());
+                        // Gen TransactionToken
+                        String transactionToken = md5hashing(
+                                userId + responsePreTransfer.getBody().getReturnResult().getResultTimeStamp());
 
-                        response.getReturnResult()
-                                .setResultTimeStamp(responsePreTransfer.getBody().getConfirmInfo().getTimeStamp());
+                        if (!StringUtil.isNullOrEmpty(response.getTransUuid())) {
+                            response.setTransUuid(responsePreTransfer.getBody().getTransUuid());
+                        }
+
+                        if (responsePreTransfer.getBody().getConfirmInfo() != null) {
+                            response.setConfirmInfo(responsePreTransfer.getBody().getConfirmInfo());
+                            response.getConfirmInfo().setTransactionToken(transactionToken);
+                            response.getConfirmInfo().setToBankCode(bankCode);
+                            response.getConfirmInfo().setMemo(memo);
+                            response.getConfirmInfo().setFee3Amount(preTransferRequest.getFee3Amount());// fee
+                            response.getConfirmInfo().setFee3Code(preTransferRequest.getFee3Code());// fee
+
+                            if (responsePreTransfer.getBody().getReturnResult() != null)
+                                response.setReturnResult(responsePreTransfer.getBody().getReturnResult());
+                        }
+
+                        var actFullDetail = "";
+                        if (response != null) {
+                            actFullDetail = gson.toJson(response);
+                        }
+
+                        // Save to redis
+                        if (!StringUtil.isNullOrEmpty(actFullDetail))
+                            redisTemplate.opsForValue().set(transactionToken, actFullDetail, Duration.ofMinutes(30));
+
+                        // TODO: Pass
+                        var responseFulllDetail = gson.toJson(responsePreTransfer);
+
+                        logService.AddActivityLog(4, "PreTransfer", responseFulllDetail, userId, comName, memo,
+                                responsePreTransfer.getBody().getReturnResult().getResultCode(),
+                                responsePreTransfer.getBody().getReturnResult().getResultCode()
+                                        + responsePreTransfer.getBody().getReturnResult().getResultDescription(),
+                                "PAGE002", "PRETRANSFER_PAGE", null, 95, tranCode, "SMTR", bankName,
+                                Date.from(Instant.now()), userId);
+
+                    } else {
+                        // TODO: Failed
+                        var responseFulllDetail = gson.toJson(responsePreTransfer);
+
+                        logService.AddActivityLog(4, "PreTransfer",
+                                "request : " + preTransferRequest + "response : " + responseFulllDetail, userId,
+                                comName, memo, "400", "Failed", "PAGE002", "PRETRANSFER_PAGE", null, 95, tranCode,
+                                "SMTR", bankName, Date.from(Instant.now()), userId);
                     }
-
-                    var actFullDetail = gson.toJson(response);
-
-                    // Save to redis
-                    if (!StringUtil.isNullOrEmpty(actFullDetail))
-                        redisTemplate.opsForValue().set(transactionToken, actFullDetail, Duration.ofMinutes(30));
 
                 } else {
                     response.setReturnResult(errorUtil.Error402());
@@ -229,109 +264,153 @@ public class TransferService {
 
             Gson gson = new Gson();
             var preTransferRequest = new TransferDtoResponse();
+            Object preTransferRequestObject;
+            String preTransferRequestString = "";
             if (isProcess) {
-                Object preTransferRequestObject = redisTemplate.opsForValue().get(transactionToken);
+                preTransferRequestObject = redisTemplate.opsForValue().get(transactionToken);
                 if (preTransferRequestObject == null) {
                     isProcess = false;
                     response.setReturnResult(errorUtil.Error403());
 
                 }
-                String preTransferRequestString = preTransferRequestObject.toString();
+                preTransferRequestString = preTransferRequestObject.toString();
                 preTransferRequest = gson.fromJson(preTransferRequestString, TransferDtoResponse.class);
+                if (preTransferRequest == null || preTransferRequest.getConfirmInfo() == null
+                        || preTransferRequest.getReturnResult() == null) {
+                    isProcess = false;
+                    response.setReturnResult(errorUtil.Error403());
+                }
             }
 
-            var transferRequest = new PreTransferRequest();
-            transferRequest.setTransCode(preTransferRequest.getConfirmInfo().getTransCode());
-            transferRequest.setCorebankTransType(corebankTransType);
-            transferRequest.setChannel(channel);
-            transferRequest.setFromWalletId(preTransferRequest.getConfirmInfo().getFromWalletId());
-            transferRequest.setToWalletId(preTransferRequest.getConfirmInfo().getToWalletId());
-            transferRequest.setAmount(preTransferRequest.getConfirmInfo().getAmount());
-            transferRequest.setFee3Code(preTransferRequest.getConfirmInfo().getFee3Code());
-            transferRequest.setFee3Amount(preTransferRequest.getConfirmInfo().getFee3Amount());
+            if (isProcess) {
+                var transferRequest = new PreTransferRequest();
+                transferRequest.setTransCode(preTransferRequest.getConfirmInfo().getTransCode());
+                transferRequest.setCorebankTransType(corebankTransType);
+                transferRequest.setChannel(channel);
+                transferRequest.setFromWalletId(preTransferRequest.getConfirmInfo().getFromWalletId());
+                transferRequest.setToWalletId(preTransferRequest.getConfirmInfo().getToWalletId());
+                transferRequest.setAmount(preTransferRequest.getConfirmInfo().getAmount());
+                transferRequest.setFee3Code(preTransferRequest.getConfirmInfo().getFee3Code());
+                transferRequest.setFee3Amount(preTransferRequest.getConfirmInfo().getFee3Amount());
 
-            // TODO: Get Transfer
-            var responseTransfer = restTemplate.postForEntity(_baseUrl + "/TransferComplete", transferRequest,
-                    TransferDtoResponse.class);
+                // TODO: Get Transfer
+                var responseTransfer = restTemplate.postForEntity(_baseUrl + "/TransferComplete", transferRequest,
+                        TransferDtoResponse.class);
+                redisTemplate.delete(transactionToken);
 
-            if (responseTransfer != null) {
-                responseTransfer.getBody().getConfirmInfo()
-                        .setToBankCode(preTransferRequest.getConfirmInfo().getToBankCode());
-                var shortInfo = responseTransfer.getBody().getConfirmInfo();
-                var shortErr = responseTransfer.getBody().getReturnResult();
+                if (responseTransfer != null) {
+                    var shortInfo = responseTransfer.getBody().getConfirmInfo();
+                    var shortErr = responseTransfer.getBody().getReturnResult();
 
-                var responseFulllDetail = gson.toJson(responseTransfer);
+                    if (shortInfo != null) {
+                        responseTransfer.getBody().getConfirmInfo()
+                                .setToBankCode(preTransferRequest.getConfirmInfo().getToBankCode());
+                    }
 
-                // TODO: GetInfo
-                CustomerListDto custList = customerService.GetCustomerListNew(citizenId, "1", comName, userId, false);
+                    var responseFulllDetail = gson.toJson(responseTransfer);
 
-                CustomerDto useCust = null;
-                for (CustomerDto item : custList.getCustomerEntity()) {
-                    WalletListResponse walletList = customerService.GetFromWallet(item.getCustId());
+                    // TODO: GetInfo
+                    CustomerListDto custList = customerService.GetCustomerListNew(citizenId, "1", comName, userId,
+                            false);
 
-                    for (WalletDto wallet : walletList.getWalletList()) {
-                        if (wallet.getWalletId().equals(shortInfo.getFromWalletId())) {
-                            useCust = item;
+                    CustomerDto useCust = null;
+                    for (CustomerDto item : custList.getCustomerEntity()) {
+                        WalletListResponse walletList = customerService.GetFromWallet(item.getCustId());
+
+                        for (WalletDto wallet : walletList.getWalletList()) {
+                            if (wallet.getWalletId().equals(preTransferRequest.getConfirmInfo().getFromWalletId())) {
+                                useCust = item;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+
+                    var tranCode = "";
+                    BankListDto getBankService = systemConfigService.GetBankService();
+                    for (BankDto item : getBankService.getBankList()) {
+                        if (item.getBankCode().equals(preTransferRequest.getConfirmInfo().getToBankCode())) {
+                            tranCode = item.getBankAbbr();
                             break;
                         }
                     }
-                    break;
-                }
 
-                var tranCode = "";
-                BankListDto getBankService = systemConfigService.GetBankService();
-                for (BankDto item : getBankService.getBankList()) {
-                    if (item.getBankCode().equals(shortInfo.getToBankCode())) {
-                        tranCode = item.getBankAbbr();
-                        break;
+                    if (responseTransfer != null && responseTransfer.getStatusCode().equals(HttpStatus.OK)) {
+                        if (shortInfo != null) {
+                            response.setConfirmInfo(responseTransfer.getBody().getConfirmInfo());
+                            response.getConfirmInfo().setMemo(preTransferRequest.getConfirmInfo().getMemo());
+                            response.setReturnResult(responseTransfer.getBody().getReturnResult());
+                            response.setTransUuid(responseTransfer.getBody().getTransUuid());
+                        } else {
+                            response.setReturnResult(responseTransfer.getBody().getReturnResult());
+                        }
+
+                    }
+
+                    if (responseTransfer != null) {
+                        if (responseTransfer.getStatusCode().equals(HttpStatus.OK)) {
+                            if (shortInfo != null) {
+                                // TODO: AddTransLog
+                                int addTransactionLog = logService.AddTransactionLog(shortInfo.getTimeStamp(),
+                                        shortInfo.getTransCode(), 95, useCust.getCustId(), useCust.getMobileNo(),
+                                        citizenId, "STMR", GetWalletint(shortInfo.getFromWalletType()),
+                                        shortInfo.getFromWalletId(), shortInfo.getFromWalletName(),
+                                        shortInfo.getFromWalletName(), tranCode,
+                                        GetWalletint(shortInfo.getToWalletType()), shortInfo.getToWalletId(),
+                                        shortInfo.getToWalletName(), shortInfo.getToWalletName(),
+                                        shortInfo.getFeeCost(), shortInfo.getAmount(), shortInfo.getToWalletCurrency(),
+                                        1, preTransferRequest.getConfirmInfo().getMemo(), shortErr.getResultCode(),
+                                        shortErr.getResultDescription(), userId, shortInfo.getTimeStamp(), userId,
+                                        shortInfo.getTimeStamp());
+
+                                LogTransaction tranlogData = logService.getLogByTranId(addTransactionLog);
+
+                                logService.AddActivityLog(5, "CompleteTransfer", responseFulllDetail, userId, comName,
+                                        preTransferRequest.getConfirmInfo().getMemo(),
+                                        responseTransfer.getBody().getReturnResult().getResultCode(),
+                                        responseTransfer.getBody().getReturnResult().getResultDescription(), "PAGE003",
+                                        "COMPLETETRANSFER_PAGE", tranlogData.getTranId().intValue(), 95,
+                                        tranlogData.getTranCode(), tranlogData.getFromBankCode(),
+                                        tranlogData.getToBankCode(), Date.from(Instant.now()), userId);
+                            } else {
+                                // TODO: AddTransLog
+                                int addTransactionLog = logService.AddTransactionLog(shortErr.getResultTimeStamp(),
+                                        preTransferRequest.getConfirmInfo().getTransCode(), 95, useCust.getCustId(),
+                                        useCust.getMobileNo(), citizenId, "STMR", 11,
+                                        preTransferRequest.getConfirmInfo().getFromWalletId(),
+                                        preTransferRequest.getConfirmInfo().getFromWalletName(),
+                                        preTransferRequest.getConfirmInfo().getFromWalletName(), tranCode, 11,
+                                        preTransferRequest.getConfirmInfo().getToWalletId(),
+                                        preTransferRequest.getConfirmInfo().getToWalletName(),
+                                        preTransferRequest.getConfirmInfo().getToWalletName(),
+                                        preTransferRequest.getConfirmInfo().getFeeCost(),
+                                        preTransferRequest.getConfirmInfo().getAmount(),
+                                        preTransferRequest.getConfirmInfo().getToWalletCurrency(), 1,
+                                        preTransferRequest.getConfirmInfo().getMemo(), "400",
+                                        "Code : " + "Failed" + " , Desc : " + shortErr.getResultDescription(), userId,
+                                        shortErr.getResultTimeStamp(), userId, shortErr.getResultTimeStamp());
+
+                                LogTransaction tranlogData = logService.getLogByTranId(addTransactionLog);
+
+                                logService.AddActivityLog(5, "CompleteTransfer",
+                                        "request : " + preTransferRequestString + "response : " + responseFulllDetail,
+                                        userId, comName, preTransferRequest.getConfirmInfo().getMemo(), "400",
+                                        "400 Failed" + "Desc : "
+                                                + responseTransfer.getBody().getReturnResult().getResultDescription(),
+                                        "PAGE003", "COMPLETETRANSFER_PAGE", tranlogData.getTranId().intValue(),
+                                        tranlogData.getTranType(), tranlogData.getTranCode(),
+                                        tranlogData.getFromBankCode(), tranlogData.getToBankCode(),
+                                        Date.from(Instant.now()), userId);
+                            }
+
+                        }
                     }
                 }
-
-                // TODO: AddTransLog
-                int addTransactionLog = logService.AddTransactionLog(shortInfo.getTimeStamp(), shortInfo.getTransCode(),
-                        95, useCust.getCustId(), useCust.getMobileNo(), citizenId, "STMR",
-                        GetWalletint(shortInfo.getFromWalletType()), shortInfo.getFromWalletId(),
-                        shortInfo.getFromWalletName(), shortInfo.getFromWalletName(), tranCode,
-                        GetWalletint(shortInfo.getToWalletType()), shortInfo.getToWalletId(),
-                        shortInfo.getToWalletName(), shortInfo.getToWalletName(), shortInfo.getFeeCost(),
-                        shortInfo.getAmount(), shortInfo.getToWalletCurrency(), 1,
-                        preTransferRequest.getConfirmInfo().getMemo(), shortErr.getResultCode(),
-                        shortErr.getResultDescription(), userId, shortInfo.getTimeStamp(), userId,
-                        shortInfo.getTimeStamp());
-
-                LogTransaction tranlogData = logService.getLogByTranId(addTransactionLog);
-
-                // TODO: AddActLog
-                logService.AddActivityLog(5, "CompleteTransfer", responseFulllDetail, userId, comName,
-                        preTransferRequest.getConfirmInfo().getMemo(),
-                        responseTransfer.getBody().getReturnResult().getResultCode(),
-                        responseTransfer.getBody().getReturnResult().getResultDescription(), "PAGE003",
-                        "COMPLETETRANSFER_PAGE", tranlogData.getTranId().intValue(), tranlogData.getTranType(),
-                        tranlogData.getTranCode(), tranlogData.getFromBankCode(), tranlogData.getToBankCode(),
-                        Date.from(Instant.now()), userId);
-
-                // Integer tranId,
-                // Integer tranType
-                // String tranCode
-                // String tranBankFrom
-                // String tranBankTo
-
-                if (responseTransfer != null && responseTransfer.getStatusCode().equals(HttpStatus.OK)) {
-                    response.setConfirmInfo(responseTransfer.getBody().getConfirmInfo());
-                    response.getConfirmInfo().setMemo(preTransferRequest.getConfirmInfo().getMemo());
-                    response.setReturnResult(responseTransfer.getBody().getReturnResult());
-                    response.setTransUuid(responseTransfer.getBody().getTransUuid());
-                }
             }
-
-            // TODO: Pass
-
-            // TODO: Failed
 
         } catch (
 
         Exception e) {
-            // TODO: handle exception
             throw e;
         }
 
